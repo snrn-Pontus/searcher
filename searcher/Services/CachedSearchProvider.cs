@@ -37,7 +37,7 @@ public sealed class CachedSearchProvider(
                 logger.LogInformation("Search cache hit for provider {Provider} and term {Term}.", Name, term);
             }
 
-            return cachedResult;
+            return cachedResult with { Term = term, FromCache = true };
         }
 
         if (detailedLogging)
@@ -48,7 +48,7 @@ public sealed class CachedSearchProvider(
         var result = await innerProvider.SearchAsync(term, cancellationToken);
         if (result.Succeeded)
         {
-            cache.Set(cacheKey, result, TimeSpan.FromSeconds(cacheSeconds));
+            cache.Set(cacheKey, result with { FromCache = false }, TimeSpan.FromSeconds(cacheSeconds));
             if (detailedLogging)
             {
                 logger.LogDebug("Cached search result for provider {Provider} and term {Term} for {CacheSeconds} seconds.", Name, term, cacheSeconds);

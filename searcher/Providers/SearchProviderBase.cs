@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using System.Text.Json;
 using Searcher.Models;
 using Searcher.Options;
 
@@ -43,17 +42,23 @@ public abstract class SearchProviderBase(HttpClient httpClient, SearchProviderOp
                 return new SearchTermResult(term, null, $"{Name} could not complete the search.");
             }
 
-            await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
-            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: timeout.Token);
-            var hits = HitCountParser.Parse(document.RootElement);
+            var hitCount = await ReadHitCountAsync(response.Content, timeout.Token);
+            if (hitCount.ProviderErrors.Count > 0)
+            {
+                Logger.LogWarning("Provider {Provider} returned {ErrorCount} provider errors for term {Term}.",
+                    Name,
+                    hitCount.ProviderErrors.Count,
+                    term);
+                return new SearchTermResult(term, null, $"{Name} could not complete the search.");
+            }
 
-            if (hits is null)
+            if (hitCount.TotalHits is null)
             {
                 Logger.LogWarning("Provider {Provider} returned an unsupported response format for term {Term}.", Name, term);
                 return new SearchTermResult(term, null, $"{Name} returned an unreadable result.");
             }
 
-            return new SearchTermResult(term, hits.Value, null);
+            return new SearchTermResult(term, hitCount.TotalHits.Value, null);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -68,4 +73,10 @@ public abstract class SearchProviderBase(HttpClient httpClient, SearchProviderOp
     }
 
     protected abstract HttpRequestMessage CreateRequest(string term);
+    protected abstract Task<ProviderHitCountResult> ReadHitCountAsync(HttpContent content, CancellationToken cancellationToken);
+}
+
+public sealed record ProviderHitCountResult(long? TotalHits, IReadOnlyList<string> ProviderErrors)
+{
+    public static ProviderHitCountResult Empty { get; } = new(null, []);
 }

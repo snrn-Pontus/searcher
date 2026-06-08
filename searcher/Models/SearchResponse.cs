@@ -19,4 +19,5 @@ public sealed record SearchTermResult(
     string? Error)
 {
     public bool Succeeded => Error is null && Hits.HasValue;
+    public bool FromCache { get; init; }
 }

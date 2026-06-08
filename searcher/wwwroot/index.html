@@ -320,11 +320,12 @@
                 <details>
                     <summary>Per-word results</summary>
                     <table>
-                        <thead><tr><th>Word</th><th>Hits</th></tr></thead>
+                        <thead><tr><th>Word</th><th>Source</th><th>Hits</th></tr></thead>
                         <tbody>
                             ${provider.terms.map(term => `
                                 <tr>
                                     <td>${escapeHtml(term.term)}</td>
+                                    <td>${term.fromCache ? 'Cache' : 'Remote'}</td>
                                     <td class="${term.error ? 'term-error' : ''}">${term.error ? escapeHtml(term.error) : formatter.format(term.hits)}</td>
                                 </tr>
                             `).join('')}

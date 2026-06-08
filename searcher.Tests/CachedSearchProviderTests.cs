@@ -27,6 +27,9 @@ public sealed class CachedSearchProviderTests
 
         Assert.Equal(12L, first.Hits.GetValueOrDefault());
         Assert.Equal(12L, second.Hits.GetValueOrDefault());
+        Assert.False(first.FromCache);
+        Assert.True(second.FromCache);
+        Assert.Equal("hello", second.Term);
         Assert.Equal(1, inner.Calls);
     }
 

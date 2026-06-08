@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using Searcher.Options;
 
@@ -16,4 +18,18 @@ public sealed class AltavistaSearchProvider(
 
         return new HttpRequestMessage(HttpMethod.Get, uri);
     }
+
+    protected override async Task<ProviderHitCountResult> ReadHitCountAsync(HttpContent content, CancellationToken cancellationToken)
+    {
+        var response = await content.ReadFromJsonAsync<AltavistaSearchResponse>(cancellationToken);
+        return response is null
+            ? ProviderHitCountResult.Empty
+            : new ProviderHitCountResult(response.TotalHits, response.Errors ?? []);
+    }
+
+    private sealed record AltavistaSearchResponse(
+        [property: JsonPropertyName("query")] string Query,
+        [property: JsonPropertyName("totalHits")] long TotalHits,
+        [property: JsonPropertyName("searchHits")] IReadOnlyList<string> SearchHits,
+        [property: JsonPropertyName("errors")] IReadOnlyList<string> Errors);
 }
