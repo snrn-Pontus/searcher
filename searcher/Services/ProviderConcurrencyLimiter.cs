@@ -9,28 +9,38 @@ namespace Searcher.Services;
 public sealed class ProviderConcurrencyLimiter(
     ISearchProvider innerProvider,
     IProviderConcurrencyGate concurrencyGate,
-    IOptions<SearchEngineOptions> options,
+    IOptions<SearchEngineOptions> searchOptions,
+    IOptions<ObservabilityOptions> observabilityOptions,
     ILogger<ProviderConcurrencyLimiter> logger) : ISearchProvider
 {
     public string Name => innerProvider.Name;
 
     public async Task<SearchTermResult> SearchAsync(string term, CancellationToken cancellationToken)
     {
-        var stopwatch = Stopwatch.StartNew();
+        var detailedLogging = observabilityOptions.Value.DetailedSearchLogging;
+        var stopwatch = detailedLogging ? Stopwatch.StartNew() : null;
         using var lease = await concurrencyGate.EnterAsync(
             Name,
-            options.Value.MaxConcurrentRequestsPerProvider,
+            searchOptions.Value.MaxConcurrentRequestsPerProvider,
             cancellationToken);
 
-        var waitMilliseconds = stopwatch.ElapsedMilliseconds;
-        if (waitMilliseconds > 0)
+        if (detailedLogging && stopwatch is not null)
         {
-            logger.LogDebug("Waited {WaitMilliseconds} ms for provider {Provider} concurrency slot.", waitMilliseconds, Name);
+            var waitMilliseconds = stopwatch.ElapsedMilliseconds;
+            if (waitMilliseconds > 0)
+            {
+                logger.LogDebug("Waited {WaitMilliseconds} ms for provider {Provider} concurrency slot.", waitMilliseconds, Name);
+            }
         }
 
         var result = await innerProvider.SearchAsync(term, cancellationToken);
-        stopwatch.Stop();
 
+        if (!detailedLogging)
+        {
+            return result;
+        }
+
+        stopwatch!.Stop();
         if (result.Succeeded)
         {
             logger.LogInformation(

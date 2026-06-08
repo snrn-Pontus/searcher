@@ -16,6 +16,7 @@ public sealed class ProviderConcurrencyLimiterTests
             inner,
             new ProviderConcurrencyGate(),
             Microsoft.Extensions.Options.Options.Create(new SearchEngineOptions { MaxConcurrentRequestsPerProvider = 2 }),
+            Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
             NullLogger<ProviderConcurrencyLimiter>.Instance);
 
         var tasks = Enumerable.Range(0, 8)

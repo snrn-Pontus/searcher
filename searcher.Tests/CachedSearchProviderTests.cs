@@ -19,6 +19,7 @@ public sealed class CachedSearchProviderTests
             inner,
             cache,
             Microsoft.Extensions.Options.Options.Create(new SearchEngineOptions { CacheDurationSeconds = 60 }),
+            Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
             NullLogger<CachedSearchProvider>.Instance);
 
         var first = await provider.SearchAsync("hello", CancellationToken.None);
@@ -38,6 +39,7 @@ public sealed class CachedSearchProviderTests
             inner,
             cache,
             Microsoft.Extensions.Options.Options.Create(new SearchEngineOptions { CacheDurationSeconds = 60 }),
+            Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
             NullLogger<CachedSearchProvider>.Instance);
 
         await provider.SearchAsync("hello", CancellationToken.None);

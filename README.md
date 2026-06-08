@@ -181,7 +181,7 @@ The current implementation includes a few production-oriented safeguards:
 - The API is rate limited to 30 search requests per minute per remote IP, with a small queue.
 - Provider calls use a shared concurrency gate, capped at 8 simultaneous outbound calls per provider by default.
 - Provider timeouts prevent requests from waiting indefinitely on a slow remote service.
-- Structured logs capture request flow, cache hits/misses, provider latency, provider failures, and concurrency-slot waits.
+- Detailed structured logs can capture request flow, cache hits/misses, provider latency, provider failures, and concurrency-slot waits.
 - `GET /health` exposes a lightweight application health endpoint for uptime checks.
 - Swagger UI is enabled in Development for interactive API exploration.
 
@@ -197,7 +197,7 @@ GET /health
 
 It reports application availability without actively calling the external search providers. This avoids turning health checks into extra provider traffic.
 
-Structured logging is used around the main request flow and provider calls. Useful production signals include request completion time, provider latency, provider errors, cache hits and misses, and time spent waiting for a provider concurrency slot.
+Detailed search logging is enabled by default and can be disabled with `Observability:DetailedSearchLogging=false`. Structured logging is used around the main request flow and provider calls. Useful production signals include request completion time, provider latency, provider errors, cache hits and misses, and time spent waiting for a provider concurrency slot.
 
 ## Security Notes
 

@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Options;
 using Searcher.Models;
+using Searcher.Options;
 using Searcher.Providers;
 
 namespace Searcher.Services;
@@ -7,6 +9,7 @@ namespace Searcher.Services;
 public sealed class SearchService(
     IEnumerable<ISearchProvider> providers,
     ISearchQueryParser queryParser,
+    IOptions<ObservabilityOptions> observabilityOptions,
     ILogger<SearchService> logger) : ISearchService
 {
     private readonly ISearchProvider[] _providers = providers.ToArray();
@@ -25,8 +28,11 @@ public sealed class SearchService(
         var summaries = await Task.WhenAll(providerTasks);
 
         stopwatch.Stop();
-        logger.LogInformation("Searched {TermCount} terms across {ProviderCount} providers in {ElapsedMilliseconds} ms.",
-            terms.Count, _providers.Length, stopwatch.ElapsedMilliseconds);
+        if (observabilityOptions.Value.DetailedSearchLogging)
+        {
+            logger.LogInformation("Searched {TermCount} terms across {ProviderCount} providers in {ElapsedMilliseconds} ms.",
+                terms.Count, _providers.Length, stopwatch.ElapsedMilliseconds);
+        }
 
         return new SearchResponse(query.Trim(), terms, summaries, stopwatch.ElapsedMilliseconds);
     }
