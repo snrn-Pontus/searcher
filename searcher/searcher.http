@@ -1,0 +1,8 @@
+@searcher_HostAddress = http://localhost:5164
+
+POST {{searcher_HostAddress}}/api/search
+Content-Type: application/json
+
+{
+  "query": "Hello world"
+}
