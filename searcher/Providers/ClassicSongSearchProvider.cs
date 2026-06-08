@@ -17,7 +17,8 @@ public sealed class ClassicSongSearchProvider(
             Content = JsonContent.Create(new { query = term })
         };
 
-    protected override async Task<ProviderHitCountResult> ReadHitCountAsync(HttpContent content, CancellationToken cancellationToken)
+    protected override async Task<ProviderHitCountResult> ReadHitCountAsync(HttpContent content,
+        CancellationToken cancellationToken)
     {
         var response = await content.ReadFromJsonAsync<ClassicSongSearchResponse>(cancellationToken);
         return response is null
@@ -27,7 +28,9 @@ public sealed class ClassicSongSearchProvider(
 
     private sealed record ClassicSongSearchResponse(
         [property: JsonPropertyName("query")] string Query,
-        [property: JsonPropertyName("totalSearchHits")] long TotalSearchHits,
-        [property: JsonPropertyName("findHits")] IReadOnlyList<string> FindHits,
+        [property: JsonPropertyName("totalSearchHits")]
+        long TotalSearchHits,
+        [property: JsonPropertyName("findHits")]
+        IReadOnlyList<string> FindHits,
         [property: JsonPropertyName("errors")] IReadOnlyList<string> Errors);
 }

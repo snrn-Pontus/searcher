@@ -15,7 +15,8 @@ public sealed class ProviderConcurrencyLimiterTests
         var provider = new ProviderConcurrencyLimiter(
             inner,
             new ProviderConcurrencyGate(),
-            Microsoft.Extensions.Options.Options.Create(new SearchEngineOptions { MaxConcurrentRequestsPerProvider = 2 }),
+            Microsoft.Extensions.Options.Options.Create(
+                new SearchEngineOptions { MaxConcurrentRequestsPerProvider = 2 }),
             Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
             NullLogger<ProviderConcurrencyLimiter>.Instance);
 

@@ -19,7 +19,8 @@ public sealed class AltavistaSearchProvider(
         return new HttpRequestMessage(HttpMethod.Get, uri);
     }
 
-    protected override async Task<ProviderHitCountResult> ReadHitCountAsync(HttpContent content, CancellationToken cancellationToken)
+    protected override async Task<ProviderHitCountResult> ReadHitCountAsync(HttpContent content,
+        CancellationToken cancellationToken)
     {
         var response = await content.ReadFromJsonAsync<AltavistaSearchResponse>(cancellationToken);
         return response is null
@@ -29,7 +30,9 @@ public sealed class AltavistaSearchProvider(
 
     private sealed record AltavistaSearchResponse(
         [property: JsonPropertyName("query")] string Query,
-        [property: JsonPropertyName("totalHits")] long TotalHits,
-        [property: JsonPropertyName("searchHits")] IReadOnlyList<string> SearchHits,
+        [property: JsonPropertyName("totalHits")]
+        long TotalHits,
+        [property: JsonPropertyName("searchHits")]
+        IReadOnlyList<string> SearchHits,
         [property: JsonPropertyName("errors")] IReadOnlyList<string> Errors);
 }

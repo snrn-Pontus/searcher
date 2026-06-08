@@ -6,7 +6,8 @@ public sealed class ProviderConcurrencyGate : IProviderConcurrencyGate
 {
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _semaphores = new(StringComparer.OrdinalIgnoreCase);
 
-    public async Task<IDisposable> EnterAsync(string providerName, int maxConcurrency, CancellationToken cancellationToken)
+    public async Task<IDisposable> EnterAsync(string providerName, int maxConcurrency,
+        CancellationToken cancellationToken)
     {
         var semaphore = _semaphores.GetOrAdd(providerName, _ => new SemaphoreSlim(maxConcurrency));
         await semaphore.WaitAsync(cancellationToken);

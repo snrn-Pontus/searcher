@@ -7,13 +7,15 @@ public sealed class SearchEngineOptions
     public SearchProviderOptions Altavista { get; init; } = new()
     {
         DisplayName = "Altavista",
-        Endpoint = "https://voyado-test-task-h8bshufyg8egejgb.northeurope-01.azurewebsites.net/api/AltavistaSearchEngine"
+        Endpoint =
+            "https://voyado-test-task-h8bshufyg8egejgb.northeurope-01.azurewebsites.net/api/AltavistaSearchEngine"
     };
 
     public SearchProviderOptions ClassicSong { get; init; } = new()
     {
         DisplayName = "Classic Song",
-        Endpoint = "https://voyado-test-task-h8bshufyg8egejgb.northeurope-01.azurewebsites.net/api/ClassicSongSearchEngine"
+        Endpoint =
+            "https://voyado-test-task-h8bshufyg8egejgb.northeurope-01.azurewebsites.net/api/ClassicSongSearchEngine"
     };
 
     public int CacheDurationSeconds { get; init; } = 300;

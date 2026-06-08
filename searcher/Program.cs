@@ -117,6 +117,7 @@ app.MapPost("/api/search", async Task<Results<Ok<SearchResponse>, BadRequest<Pro
             {
                 logger.LogInformation("Received search request with {QueryLength} characters.", request.Query.Length);
             }
+
             var response = await searchService.SearchAsync(request.Query, cancellationToken);
             if (observabilityOptions.Value.DetailedSearchLogging)
             {
@@ -126,6 +127,7 @@ app.MapPost("/api/search", async Task<Results<Ok<SearchResponse>, BadRequest<Pro
                     response.Providers.Count,
                     response.ElapsedMilliseconds);
             }
+
             return TypedResults.Ok(response);
         }
         catch (SearchValidationException ex)

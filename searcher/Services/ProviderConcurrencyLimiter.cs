@@ -29,7 +29,8 @@ public sealed class ProviderConcurrencyLimiter(
             var waitMilliseconds = stopwatch.ElapsedMilliseconds;
             if (waitMilliseconds > 0)
             {
-                logger.LogDebug("Waited {WaitMilliseconds} ms for provider {Provider} concurrency slot.", waitMilliseconds, Name);
+                logger.LogDebug("Waited {WaitMilliseconds} ms for provider {Provider} concurrency slot.",
+                    waitMilliseconds, Name);
             }
         }
 

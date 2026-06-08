@@ -18,13 +18,13 @@ public sealed class SearchProviderClientTests
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent("""
-                    {
-                      "query": "hello world",
-                      "totalHits": 42,
-                      "searchHits": ["result"],
-                      "errors": []
-                    }
-                    """)
+                                                {
+                                                  "query": "hello world",
+                                                  "totalHits": 42,
+                                                  "searchHits": ["result"],
+                                                  "errors": []
+                                                }
+                                                """)
                 });
             })),
             Microsoft.Extensions.Options.Options.Create(CreateOptions()),
@@ -52,13 +52,13 @@ public sealed class SearchProviderClientTests
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent("""
-                    {
-                      "query": "hello",
-                      "totalSearchHits": 9,
-                      "findHits": ["result"],
-                      "errors": []
-                    }
-                    """)
+                                                {
+                                                  "query": "hello",
+                                                  "totalSearchHits": 9,
+                                                  "findHits": ["result"],
+                                                  "errors": []
+                                                }
+                                                """)
                 };
             })),
             Microsoft.Extensions.Options.Options.Create(CreateOptions()),
@@ -80,13 +80,13 @@ public sealed class SearchProviderClientTests
             new HttpClient(new StubHttpHandler(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("""
-                {
-                  "query": "hello",
-                  "totalHits": 0,
-                  "searchHits": [],
-                  "errors": ["internal provider detail"]
-                }
-                """)
+                                            {
+                                              "query": "hello",
+                                              "totalHits": 0,
+                                              "searchHits": [],
+                                              "errors": ["internal provider detail"]
+                                            }
+                                            """)
             }))),
             Microsoft.Extensions.Options.Options.Create(CreateOptions()),
             NullLogger<AltavistaSearchProvider>.Instance);
@@ -113,9 +113,11 @@ public sealed class SearchProviderClientTests
         }
     };
 
-    private sealed class StubHttpHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handler) : HttpMessageHandler
+    private sealed class StubHttpHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handler)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
             handler(request);
     }
 }

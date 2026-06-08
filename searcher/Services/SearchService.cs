@@ -30,7 +30,8 @@ public sealed class SearchService(
         stopwatch.Stop();
         if (observabilityOptions.Value.DetailedSearchLogging)
         {
-            logger.LogInformation("Searched {TermCount} terms across {ProviderCount} providers in {ElapsedMilliseconds} ms.",
+            logger.LogInformation(
+                "Searched {TermCount} terms across {ProviderCount} providers in {ElapsedMilliseconds} ms.",
                 terms.Count, _providers.Length, stopwatch.ElapsedMilliseconds);
         }
 
@@ -45,7 +46,8 @@ public sealed class SearchService(
         var termTasks = terms.Select(term => provider.SearchAsync(term, cancellationToken));
         var termResults = await Task.WhenAll(termTasks);
         var totalHits = termResults.Where(result => result.Hits.HasValue).Sum(result => result.Hits!.Value);
-        var errors = termResults.Where(result => result.Error is not null).Select(result => result.Error).Distinct().ToArray();
+        var errors = termResults.Where(result => result.Error is not null).Select(result => result.Error).Distinct()
+            .ToArray();
 
         return new SearchProviderSummary(
             provider.Name,

@@ -16,7 +16,9 @@ public sealed class SearchServiceTests
             new StubProvider("One", term => new SearchTermResult(term, term.Length, null)),
             new StubProvider("Two", term => new SearchTermResult(term, 10, null))
         };
-        var service = new SearchService(providers, new SearchQueryParser(), Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()), NullLogger<SearchService>.Instance);
+        var service = new SearchService(providers, new SearchQueryParser(),
+            Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
+            NullLogger<SearchService>.Instance);
 
         var response = await service.SearchAsync("hi world", CancellationToken.None);
 
@@ -31,7 +33,9 @@ public sealed class SearchServiceTests
         var provider = new StubProvider("Partial", term => term == "bad"
             ? new SearchTermResult(term, null, "Provider failed.")
             : new SearchTermResult(term, 4, null));
-        var service = new SearchService([provider], new SearchQueryParser(), Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()), NullLogger<SearchService>.Instance);
+        var service = new SearchService([provider], new SearchQueryParser(),
+            Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
+            NullLogger<SearchService>.Instance);
 
         var response = await service.SearchAsync("good bad", CancellationToken.None);
 

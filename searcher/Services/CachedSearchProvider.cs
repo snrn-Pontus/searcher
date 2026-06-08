@@ -51,7 +51,9 @@ public sealed class CachedSearchProvider(
             cache.Set(cacheKey, result with { FromCache = false }, TimeSpan.FromSeconds(cacheSeconds));
             if (detailedLogging)
             {
-                logger.LogDebug("Cached search result for provider {Provider} and term {Term} for {CacheSeconds} seconds.", Name, term, cacheSeconds);
+                logger.LogDebug(
+                    "Cached search result for provider {Provider} and term {Term} for {CacheSeconds} seconds.", Name,
+                    term, cacheSeconds);
             }
         }
 
