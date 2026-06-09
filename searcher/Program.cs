@@ -2,8 +2,8 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Searcher.Logging;
 using Searcher.Models;
-using Searcher.Options;
 using Searcher.Providers;
 using Searcher.Services;
 
@@ -29,42 +29,12 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-builder.Services.AddOptions<ObservabilityOptions>()
-    .Bind(builder.Configuration.GetSection(ObservabilityOptions.SectionName));
-
-builder.Services.AddOptions<SearchEngineOptions>()
-    .Bind(builder.Configuration.GetSection(SearchEngineOptions.SectionName))
-    .Validate(SearchEngineOptions.IsValid, "Search provider options are invalid.");
-
-builder.Services.AddSingleton<ISearchQueryParser, SearchQueryParser>();
-builder.Services.AddSingleton<IProviderConcurrencyGate, ProviderConcurrencyGate>();
-builder.Services.AddScoped<ISearchService, SearchService>();
-builder.Services.AddHttpClient<AltavistaSearchProvider>();
-builder.Services.AddHttpClient<ClassicSongSearchProvider>();
-builder.Services.AddScoped<ISearchProvider>(sp =>
-    new CachedSearchProvider(
-        new ProviderConcurrencyLimiter(
-            sp.GetRequiredService<AltavistaSearchProvider>(),
-            sp.GetRequiredService<IProviderConcurrencyGate>(),
-            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SearchEngineOptions>>(),
-            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>(),
-            sp.GetRequiredService<ILogger<ProviderConcurrencyLimiter>>()),
-        sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>(),
-        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SearchEngineOptions>>(),
-        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>(),
-        sp.GetRequiredService<ILogger<CachedSearchProvider>>()));
-builder.Services.AddScoped<ISearchProvider>(sp =>
-    new CachedSearchProvider(
-        new ProviderConcurrencyLimiter(
-            sp.GetRequiredService<ClassicSongSearchProvider>(),
-            sp.GetRequiredService<IProviderConcurrencyGate>(),
-            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SearchEngineOptions>>(),
-            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>(),
-            sp.GetRequiredService<ILogger<ProviderConcurrencyLimiter>>()),
-        sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>(),
-        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SearchEngineOptions>>(),
-        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>(),
-        sp.GetRequiredService<ILogger<CachedSearchProvider>>()));
+builder.Services
+    .AddSearchOptions(builder.Configuration)
+    .AddSearchServices()
+    .AddSearchProvider<AltavistaSearchProvider>()
+    .AddSearchProvider<ClassicSongSearchProvider>()
+    .AddSearchProvider<LibraryOfCongressSearchProvider>();
 
 var app = builder.Build();
 
@@ -96,13 +66,12 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 app.MapPost("/api/search", async Task<Results<Ok<SearchResponse>, BadRequest<ProblemDetails>>> (
         SearchRequest request,
         ISearchService searchService,
-        Microsoft.Extensions.Options.IOptions<ObservabilityOptions> observabilityOptions,
         ILogger<Program> logger,
         CancellationToken cancellationToken) =>
     {
         if (string.IsNullOrWhiteSpace(request.Query))
         {
-            logger.LogWarning("Rejected empty search request.");
+            AppLog.RejectedEmptySearch(logger);
             return TypedResults.BadRequest(new ProblemDetails
             {
                 Title = "Search query is required.",
@@ -113,26 +82,22 @@ app.MapPost("/api/search", async Task<Results<Ok<SearchResponse>, BadRequest<Pro
 
         try
         {
-            if (observabilityOptions.Value.DetailedSearchLogging)
+            if (logger.IsEnabled(LogLevel.Debug))
             {
-                logger.LogInformation("Received search request with {QueryLength} characters.", request.Query.Length);
+                AppLog.SearchRequestReceived(logger, request.Query.Length);
             }
 
             var response = await searchService.SearchAsync(request.Query, cancellationToken);
-            if (observabilityOptions.Value.DetailedSearchLogging)
+            if (logger.IsEnabled(LogLevel.Information))
             {
-                logger.LogInformation(
-                    "Completed search request for {TermCount} terms across {ProviderCount} providers in {ElapsedMilliseconds} ms.",
-                    response.Terms.Count,
-                    response.Providers.Count,
-                    response.ElapsedMilliseconds);
+                AppLog.SearchRequestCompleted(logger, response.Terms.Count, response.Providers.Count, response.ElapsedMilliseconds);
             }
 
             return TypedResults.Ok(response);
         }
         catch (SearchValidationException ex)
         {
-            logger.LogWarning(ex, "Rejected invalid search request.");
+            AppLog.InvalidSearchRejected(logger, ex);
             return TypedResults.BadRequest(new ProblemDetails
             {
                 Title = "Invalid search query.",
@@ -142,9 +107,6 @@ app.MapPost("/api/search", async Task<Results<Ok<SearchResponse>, BadRequest<Pro
         }
     })
     .RequireRateLimiting("SearchApi")
-    .WithName("Search")
-    .WithOpenApi();
+    .WithName("Search");
 
 app.Run();
-
-public partial class Program;

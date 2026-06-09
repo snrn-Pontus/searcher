@@ -1,3 +1,6 @@
 namespace Searcher.Models;
 
-public sealed record SearchRequest(string? Query);
+public sealed class SearchRequest
+{
+    public string? Query { get; init; }
+}

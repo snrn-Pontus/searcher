@@ -74,6 +74,39 @@ public sealed class SearchProviderClientTests
     }
 
     [Fact]
+    public async Task LibraryOfCongress_uses_get_without_token_and_typed_response()
+    {
+        HttpRequestMessage? captured = null;
+        var provider = new LibraryOfCongressSearchProvider(
+            new HttpClient(new StubHttpHandler(request =>
+            {
+                captured = request;
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""
+                                                {
+                                                  "pagination": {
+                                                    "total": 3361
+                                                  }
+                                                }
+                                                """)
+                });
+            })),
+            Microsoft.Extensions.Options.Options.Create(CreateOptions()),
+            NullLogger<LibraryOfCongressSearchProvider>.Instance);
+
+        var result = await provider.SearchAsync("hey jude", CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(3361L, result.Hits.GetValueOrDefault());
+        Assert.Equal(HttpMethod.Get, captured?.Method);
+        Assert.Contains("q=hey%20jude", captured!.RequestUri!.Query);
+        Assert.Contains("fo=json", captured.RequestUri.Query);
+        Assert.Contains("at=pagination", captured.RequestUri.Query);
+        Assert.False(captured.Headers.Contains("X-Api-Token"));
+    }
+
+    [Fact]
     public async Task Provider_errors_are_sanitized_in_term_result()
     {
         var provider = new AltavistaSearchProvider(
@@ -110,6 +143,11 @@ public sealed class SearchProviderClientTests
             DisplayName = "Classic Song",
             Endpoint = "https://example.test/classic",
             ApiToken = "classic-token"
+        },
+        LibraryOfCongress = new SearchProviderOptions
+        {
+            DisplayName = "Library of Congress",
+            Endpoint = "https://example.test/loc"
         }
     };
 

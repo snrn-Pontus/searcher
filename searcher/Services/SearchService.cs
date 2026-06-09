@@ -1,7 +1,6 @@
 using System.Diagnostics;
-using Microsoft.Extensions.Options;
+using Searcher.Logging;
 using Searcher.Models;
-using Searcher.Options;
 using Searcher.Providers;
 
 namespace Searcher.Services;
@@ -9,7 +8,6 @@ namespace Searcher.Services;
 public sealed class SearchService(
     IEnumerable<ISearchProvider> providers,
     ISearchQueryParser queryParser,
-    IOptions<ObservabilityOptions> observabilityOptions,
     ILogger<SearchService> logger) : ISearchService
 {
     private readonly ISearchProvider[] _providers = providers.ToArray();
@@ -28,14 +26,18 @@ public sealed class SearchService(
         var summaries = await Task.WhenAll(providerTasks);
 
         stopwatch.Stop();
-        if (observabilityOptions.Value.DetailedSearchLogging)
+        if (logger.IsEnabled(LogLevel.Debug))
         {
-            logger.LogInformation(
-                "Searched {TermCount} terms across {ProviderCount} providers in {ElapsedMilliseconds} ms.",
-                terms.Count, _providers.Length, stopwatch.ElapsedMilliseconds);
+            AppLog.TermsSearched(logger, terms.Count, _providers.Length, stopwatch.ElapsedMilliseconds);
         }
 
-        return new SearchResponse(query.Trim(), terms, summaries, stopwatch.ElapsedMilliseconds);
+        return new SearchResponse
+        {
+            Query = query.Trim(),
+            Terms = terms,
+            Providers = summaries,
+            ElapsedMilliseconds = stopwatch.ElapsedMilliseconds
+        };
     }
 
     private static async Task<SearchProviderSummary> SearchProviderAsync(
@@ -46,14 +48,15 @@ public sealed class SearchService(
         var termTasks = terms.Select(term => provider.SearchAsync(term, cancellationToken));
         var termResults = await Task.WhenAll(termTasks);
         var totalHits = termResults.Where(result => result.Hits.HasValue).Sum(result => result.Hits!.Value);
-        var errors = termResults.Where(result => result.Error is not null).Select(result => result.Error).Distinct()
-            .ToArray();
+        var errors = termResults.Where(result => result.Error is not null).Select(result => result.Error).Distinct().ToArray();
 
-        return new SearchProviderSummary(
-            provider.Name,
-            totalHits,
-            errors.Length == 0,
-            errors.Length == 0 ? null : string.Join(" ", errors),
-            termResults);
+        return new SearchProviderSummary
+        {
+            Provider = provider.Name,
+            TotalHits = totalHits,
+            Succeeded = errors.Length == 0,
+            Error = errors.Length == 0 ? null : string.Join(" ", errors),
+            Terms = termResults
+        };
     }
 }

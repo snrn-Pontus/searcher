@@ -44,12 +44,6 @@ SearchEngines__Altavista__ApiToken=<altavista-token>
 SearchEngines__ClassicSong__ApiToken=<classic-song-token>
 ```
 
-Detailed search logging is enabled by default and can be disabled with:
-
-```bash
-Observability__DetailedSearchLogging=false
-```
-
 ## Build, Test, and Run
 
 Prerequisite: .NET 10 SDK or Visual Studio with .NET 10 support.
@@ -125,9 +119,10 @@ Browser
         -> ProviderConcurrencyLimiter
           -> AltavistaSearchProvider
           -> ClassicSongSearchProvider
+          -> LibraryOfCongressSearchProvider
 ```
 
-The backend uses provider-specific typed response DTOs. Altavista returns `totalHits`; Classic Song returns `totalSearchHits`. Each provider owns its own HTTP method, token header, request shape, and response parsing.
+The providers share a generic typed base class for token handling, timeouts, HTTP status handling, JSON deserialization, sanitized errors, and hit-count validation. Altavista maps `totalHits`, Classic Song maps `totalSearchHits`, and Library of Congress maps `pagination.total`. Each provider only owns its request shape and provider-specific response mapping.
 
 ## Scalability and Reliability
 
@@ -138,12 +133,12 @@ The project includes production-oriented safeguards without adding external infr
 - Short-lived in-memory caching per `(provider, term)`.
 - Shared provider concurrency limits to prevent unbounded fan-out.
 - Provider timeouts and partial failure handling.
-- Structured logging for request flow, cache behavior, provider latency, and failures.
+- Structured logging keeps one successful search-completion event at `Information`, detailed cache/provider success-path events at `Debug`, and degraded behavior at `Warning`. Verbosity is controlled with standard `Logging:LogLevel` configuration.
 - Lightweight `/health` endpoint that does not call external providers.
 
 For a multi-instance production deployment, local cache/rate limits should move to shared infrastructure such as Redis or an API gateway. Useful next steps would be OpenTelemetry tracing, provider-specific circuit breakers/retries, provider quota tracking, and distributed rate limiting.
 
-The provided assignment endpoints appear to return synthetic hit counts, so different providers may produce very similar totals for the same terms.
+The provided assignment endpoints appear to return synthetic hit counts, so those providers may produce very similar totals for the same terms. Library of Congress returns a real search-result total through `pagination.total`.
 
 ## Security Notes
 
