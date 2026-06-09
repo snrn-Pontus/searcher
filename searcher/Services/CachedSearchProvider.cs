@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Searcher.Logging;
 using Searcher.Models;
 using Searcher.Options;
 using Searcher.Providers;
@@ -10,7 +11,6 @@ public sealed class CachedSearchProvider(
     ISearchProvider innerProvider,
     IMemoryCache cache,
     IOptions<SearchEngineOptions> searchOptions,
-    IOptions<ObservabilityOptions> observabilityOptions,
     ILogger<CachedSearchProvider> logger) : ISearchProvider
 {
     public string Name => innerProvider.Name;
@@ -18,12 +18,11 @@ public sealed class CachedSearchProvider(
     public async Task<SearchTermResult> SearchAsync(string term, CancellationToken cancellationToken)
     {
         var cacheSeconds = searchOptions.Value.CacheDurationSeconds;
-        var detailedLogging = observabilityOptions.Value.DetailedSearchLogging;
         if (cacheSeconds <= 0)
         {
-            if (detailedLogging)
+            if (logger.IsEnabled(LogLevel.Debug))
             {
-                logger.LogDebug("Search cache disabled for provider {Provider}.", Name);
+                AppLog.CacheDisabled(logger, Name);
             }
 
             return await innerProvider.SearchAsync(term, cancellationToken);
@@ -32,28 +31,26 @@ public sealed class CachedSearchProvider(
         var cacheKey = $"search:{Name}:{term}".ToLowerInvariant();
         if (cache.TryGetValue(cacheKey, out SearchTermResult? cachedResult) && cachedResult is not null)
         {
-            if (detailedLogging)
+            if (logger.IsEnabled(LogLevel.Debug))
             {
-                logger.LogInformation("Search cache hit for provider {Provider} and term {Term}.", Name, term);
+                AppLog.CacheHit(logger, Name, term);
             }
 
             return cachedResult with { Term = term, FromCache = true };
         }
 
-        if (detailedLogging)
+        if (logger.IsEnabled(LogLevel.Debug))
         {
-            logger.LogInformation("Search cache miss for provider {Provider} and term {Term}.", Name, term);
+            AppLog.CacheMiss(logger, Name, term);
         }
 
         var result = await innerProvider.SearchAsync(term, cancellationToken);
         if (result.Succeeded)
         {
             cache.Set(cacheKey, result with { FromCache = false }, TimeSpan.FromSeconds(cacheSeconds));
-            if (detailedLogging)
+            if (logger.IsEnabled(LogLevel.Debug))
             {
-                logger.LogDebug(
-                    "Cached search result for provider {Provider} and term {Term} for {CacheSeconds} seconds.", Name,
-                    term, cacheSeconds);
+                AppLog.SearchResultCached(logger, Name, term, cacheSeconds);
             }
         }
 

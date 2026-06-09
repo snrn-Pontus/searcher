@@ -169,7 +169,9 @@
             font-size: 0.8rem;
         }
 
+        .provider-state.empty { color: var(--muted); }
         .provider-state.failed { color: var(--warning); }
+        .provider-state.unavailable { color: var(--danger); }
 
         .hit-count {
             margin: 18px 0 4px;
@@ -307,12 +309,42 @@
         message.className = `message visible ${level}`.trim();
     }
 
+    function getSuccessfulTermCount(provider) {
+        return (provider.terms ?? []).filter(term => term.error == null && term.hits != null).length;
+    }
+
+    function getProviderStateLabel(provider) {
+        const successfulTermCount = getSuccessfulTermCount(provider);
+        const termCount = (provider.terms ?? []).length;
+
+        if (successfulTermCount === termCount && provider.totalHits === 0) {
+            return 'No hits';
+        }
+
+        if (successfulTermCount === termCount) {
+            return 'Complete';
+        }
+
+        return successfulTermCount > 0 ? 'Partial' : 'Unavailable';
+    }
+
+    function getProviderStateClass(provider) {
+        const successfulTermCount = getSuccessfulTermCount(provider);
+        const termCount = (provider.terms ?? []).length;
+
+        if (successfulTermCount === termCount) {
+            return provider.totalHits === 0 ? 'empty' : '';
+        }
+
+        return successfulTermCount > 0 ? 'failed' : 'unavailable';
+    }
+
     function renderResults(data) {
         results.innerHTML = data.providers.map(provider => `
             <article class="provider-card">
                 <div class="provider-header">
                     <h2 class="provider-name">${escapeHtml(provider.provider)}</h2>
-                    <span class="provider-state ${provider.succeeded ? '' : 'failed'}">${provider.succeeded ? 'Complete' : 'Partial'}</span>
+                    <span class="provider-state ${getProviderStateClass(provider)}">${getProviderStateLabel(provider)}</span>
                 </div>
                 <div class="hit-count">${formatter.format(provider.totalHits)}</div>
                 <div class="hit-label">total hits</div>

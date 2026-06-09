@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using Searcher.Options;
@@ -9,7 +8,7 @@ public sealed class AltavistaSearchProvider(
     HttpClient httpClient,
     IOptions<SearchEngineOptions> options,
     ILogger<AltavistaSearchProvider> logger)
-    : SearchProviderBase(httpClient, options.Value.Altavista, logger)
+    : SearchProviderBase<AltavistaSearchProvider.Response>(httpClient, options.Value.Altavista, logger)
 {
     protected override HttpRequestMessage CreateRequest(string term)
     {
@@ -19,20 +18,14 @@ public sealed class AltavistaSearchProvider(
         return new HttpRequestMessage(HttpMethod.Get, uri);
     }
 
-    protected override async Task<ProviderHitCountResult> ReadHitCountAsync(HttpContent content,
-        CancellationToken cancellationToken)
-    {
-        var response = await content.ReadFromJsonAsync<AltavistaSearchResponse>(cancellationToken);
-        return response is null
-            ? ProviderHitCountResult.Empty
-            : new ProviderHitCountResult(response.TotalHits, response.Errors ?? []);
-    }
+    protected override ProviderHitCountResult GetHitCount(Response response) =>
+        new(response.TotalHits, response.Errors ?? []);
 
-    private sealed record AltavistaSearchResponse(
+    public sealed record Response(
         [property: JsonPropertyName("query")] string Query,
         [property: JsonPropertyName("totalHits")]
         long TotalHits,
         [property: JsonPropertyName("searchHits")]
         IReadOnlyList<string> SearchHits,
-        [property: JsonPropertyName("errors")] IReadOnlyList<string> Errors);
+        [property: JsonPropertyName("errors")] IReadOnlyList<string>? Errors);
 }

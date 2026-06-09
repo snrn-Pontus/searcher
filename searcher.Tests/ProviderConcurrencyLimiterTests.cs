@@ -17,7 +17,6 @@ public sealed class ProviderConcurrencyLimiterTests
             new ProviderConcurrencyGate(),
             Microsoft.Extensions.Options.Options.Create(
                 new SearchEngineOptions { MaxConcurrentRequestsPerProvider = 2 }),
-            Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
             NullLogger<ProviderConcurrencyLimiter>.Instance);
 
         var tasks = Enumerable.Range(0, 8)
@@ -41,7 +40,7 @@ public sealed class ProviderConcurrencyLimiterTests
             MaxObservedConcurrency = Math.Max(MaxObservedConcurrency, current);
             await Task.Delay(25, cancellationToken);
             Interlocked.Decrement(ref _currentConcurrency);
-            return new SearchTermResult(term, 1, null);
+            return new SearchTermResult { Term = term, Hits = 1, Error = null };
         }
     }
 }

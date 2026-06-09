@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Searcher.Models;
 using Searcher.Options;
 using Searcher.Providers;
@@ -13,13 +12,12 @@ public sealed class CachedSearchProviderTests
     [Fact]
     public async Task SearchAsync_caches_successful_provider_results()
     {
-        var inner = new CountingProvider("Provider", new SearchTermResult("hello", 12, null));
+        var inner = new CountingProvider("Provider", new SearchTermResult { Term = "hello", Hits = 12, Error = null });
         using var cache = new MemoryCache(new MemoryCacheOptions());
         var provider = new CachedSearchProvider(
             inner,
             cache,
             Microsoft.Extensions.Options.Options.Create(new SearchEngineOptions { CacheDurationSeconds = 60 }),
-            Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
             NullLogger<CachedSearchProvider>.Instance);
 
         var first = await provider.SearchAsync("hello", CancellationToken.None);
@@ -36,13 +34,12 @@ public sealed class CachedSearchProviderTests
     [Fact]
     public async Task SearchAsync_does_not_cache_failed_provider_results()
     {
-        var inner = new CountingProvider("Provider", new SearchTermResult("hello", null, "failed"));
+        var inner = new CountingProvider("Provider", new SearchTermResult { Term = "hello", Hits = null, Error = "failed" });
         using var cache = new MemoryCache(new MemoryCacheOptions());
         var provider = new CachedSearchProvider(
             inner,
             cache,
             Microsoft.Extensions.Options.Options.Create(new SearchEngineOptions { CacheDurationSeconds = 60 }),
-            Microsoft.Extensions.Options.Options.Create(new ObservabilityOptions()),
             NullLogger<CachedSearchProvider>.Instance);
 
         await provider.SearchAsync("hello", CancellationToken.None);

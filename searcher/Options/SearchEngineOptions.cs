@@ -7,15 +7,19 @@ public sealed class SearchEngineOptions
     public SearchProviderOptions Altavista { get; init; } = new()
     {
         DisplayName = "Altavista",
-        Endpoint =
-            "https://voyado-test-task-h8bshufyg8egejgb.northeurope-01.azurewebsites.net/api/AltavistaSearchEngine"
+        Endpoint = "https://voyado-test-task-h8bshufyg8egejgb.northeurope-01.azurewebsites.net/api/AltavistaSearchEngine"
     };
 
     public SearchProviderOptions ClassicSong { get; init; } = new()
     {
         DisplayName = "Classic Song",
-        Endpoint =
-            "https://voyado-test-task-h8bshufyg8egejgb.northeurope-01.azurewebsites.net/api/ClassicSongSearchEngine"
+        Endpoint = "https://voyado-test-task-h8bshufyg8egejgb.northeurope-01.azurewebsites.net/api/ClassicSongSearchEngine"
+    };
+
+    public SearchProviderOptions LibraryOfCongress { get; init; } = new()
+    {
+        DisplayName = "Library of Congress",
+        Endpoint = "https://www.loc.gov/search/"
     };
 
     public int CacheDurationSeconds { get; init; } = 300;
@@ -24,6 +28,7 @@ public sealed class SearchEngineOptions
     public static bool IsValid(SearchEngineOptions options) =>
         IsAbsoluteUrl(options.Altavista.Endpoint) &&
         IsAbsoluteUrl(options.ClassicSong.Endpoint) &&
+        IsAbsoluteUrl(options.LibraryOfCongress.Endpoint) &&
         options.CacheDurationSeconds >= 0 &&
         options.MaxConcurrentRequestsPerProvider > 0;
 
